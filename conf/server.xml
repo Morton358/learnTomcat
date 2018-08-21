@@ -156,13 +156,8 @@
              resources under the key "UserDatabase".  Any edits
              that are performed against this UserDatabase are immediately
              available for use by the Realm.  -->
-        <!--<Realm className="org.apache.catalina.realm.UserDatabaseRealm"
-               resourceName="UserDatabase"/> -->
-	<Realm className="org.apache.catalina.realm.DataSourceRealm"
-		dataSourceName="jdbc/localMariaDB"
-		userTable="user" userNameCol="user_name" userCredCol="password"
-		userRoleTable="role" roleNameCol="role_name"
-	/>
+        <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase"/>
       </Realm>
 
       <Host name="localhost"  appBase="webapps"
@@ -192,6 +187,12 @@
 			global="jdbc/localMariaDB"
 			name="jdbc/librarian"
 			type="javax.sql.DataSource"
+		/>
+
+		<Realm className="org.apache.catalina.realm.DataSourceRealm"
+		dataSourceName="jdbc/localMariaDB"
+		userTable="user" userNameCol="user_name" userCredCol="password"
+		userRoleTable="role" roleNameCol="role_name"
 		/>
 
        </Context>        
