@@ -1,0 +1,117 @@
+20-Aug-2018 06:34:19.133 INFO [http-nio-8080-exec-13] org.apache.catalina.util.LifecycleBase.start The start() method was called on component [StandardEngine[Catalina].StandardHost[localhost].StandardContext[/docs]] after start() had already been called. The second call will be ignored.
+20-Aug-2018 06:34:38.392 INFO [http-nio-8080-exec-18] org.apache.catalina.util.LifecycleBase.start The start() method was called on component [StandardEngine[Catalina].StandardHost[localhost].StandardContext[/docs]] after start() had already been called. The second call will be ignored.
+
+http-nio-8080-exec-18 i http-nio-8080-exec-13 zostaly otwarte jako osobni uzytkownicy, w osobnych oknach przegladarki. Aktywnosc tych uzytkownikow mozna sledzic grepujac po tych ID.
+
+---
+1catalina.org.apache.juli.AsyncFileHandler
+1 - numer handlera
+catalina - nazwa pliku loga
+
+---
+Handler buforuje wpisy logow, dlatego moga sie one nie pojawiac na bierzaco w pliku logu. Co jakis czas nastepuje zrzut z bufora. 
+>>> Jak to wymusic?
+
+--
+pro.realis.lab.librarian.servlet.PublisherServlet.level=FINE
+
+
+---
+handlers = 1catalina.org.apache.juli.AsyncFileHandler, 2localhost.org.apache.juli.AsyncFileHandler, 3manager.org.apache.juli.AsyncFileHandler, 4host-manager.org.apache.juli.AsyncFileHandler, 5librarian.org.apache.juli.AsyncFileHandler, java.util.logging.ConsoleHandler
+
+5librarian.org.apache.juli.AsyncFileHandler = FINEST
+5librarian.org.apache.juli.AsyncFileHandler.directory = ${catalina.base}\logs'
+5librarian.org.apache.juli.AsyncFileHandler.prefix = librarian.
+
+pro.realis.handlers=5librarian.org.apache.juli.AsyncFileHandler
+
+---
+Deploywanie przez contexty w pliku server.xml
+...
+<Host name="localhost"  appBase="webapps"
+           unpackWARs="true" autoDeploy="false" deployOnStartup="false">
+
+<Context path="/librarian" docBase="librarian-web.war"/>
+<Context path="/manager" docBase="manager" privileged="true"/>
+<Context path="" docBase="ROOT"/>
+...
+
+---
+Ustawianie aplikacji jako domyslnej strony na porcie 80
+...
+   <Connector port="80" protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               redirectPort="8443" />
+
+<Host name="localhost"  appBase="webapps"
+           unpackWARs="true" autoDeploy="false" deployOnStartup="false">
+
+
+<Context path="" docBase="librarian-web.war"/>
+<Context path="/manager" docBase="manager" privileged="true"/>
+...
+
+usunac katalog ROOT
+
+restart tomcata
+
+---
+Dodawanie jdbc w server.xml
+
+<GlobalNamingResources>
+...
+    <Resource 
+        name="jdbc/localH2"
+        type="javax.sql.DataSource" 
+        auth="Container"
+        driverClassName="org.h2.Driver"
+        url="jdbc:h2:tcp://localhost/~/test" 
+        username="sa"
+        password=""
+        />
+...
+	<Context path="" docBase="librarian-web.war">
+...
+                <ResourceLink
+                        global="jdbc/localH2"
+                        name="jdbc/librarian"
+                        type="javax.sql.DataSource"
+                />
+
+
+---
+Zmiana bazy danych na MariaDB,
+
+Dodanie sterownika ze strony:
+https://mariadb.com/kb/en/library/about-mariadb-connector-j/
+
+[root@sages lib]# cp ../../../Downloads/mariadb-java-client-2.2.6.jar .
+
+Info o klasie javy i url:
+connection = DriverManager.getConnection("jdbc:mariadb://localhost:3306/DB?user=root&password=myPassword");
+The legacy way of loading a JDBC driver (using Class.forName("org.mariadb.jdbc.Driver")) still works.
+
+Dodanie zasobow w server.xml
+<GlobalNamingResources>
+...
+  <Resource
+        name="jdbc/localMariaDB"
+        type="javax.sql.DataSource"
+        auth="Container"
+        driverClassName="org.mariadb.jdbc.Driver"
+        url="jdbc:mariadb://localhost:3306/librarian"
+        username="root"
+        password="sages"
+        />
+...
+        <Context path="" docBase="librarian-web.war">
+...
+                <ResourceLink
+                        global="jdbc/localMariaDB"
+                        name="jdbc/librarian"
+                        type="javax.sql.DataSource"
+                />
+
+---
+
+
