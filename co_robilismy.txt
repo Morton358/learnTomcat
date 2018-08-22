@@ -3,20 +3,20 @@
 
 http-nio-8080-exec-18 i http-nio-8080-exec-13 zostaly otwarte jako osobni uzytkownicy, w osobnych oknach przegladarki. Aktywnosc tych uzytkownikow mozna sledzic grepujac po tych ID.
 
----
+-----------
 1catalina.org.apache.juli.AsyncFileHandler
 1 - numer handlera
 catalina - nazwa pliku loga
 
----
+-----------
 Handler buforuje wpisy logow, dlatego moga sie one nie pojawiac na bierzaco w pliku logu. Co jakis czas nastepuje zrzut z bufora. 
 >>> Jak to wymusic?
 
---
+-----------
 pro.realis.lab.librarian.servlet.PublisherServlet.level=FINE
 
 
----
+-----------
 handlers = 1catalina.org.apache.juli.AsyncFileHandler, 2localhost.org.apache.juli.AsyncFileHandler, 3manager.org.apache.juli.AsyncFileHandler, 4host-manager.org.apache.juli.AsyncFileHandler, 5librarian.org.apache.juli.AsyncFileHandler, java.util.logging.ConsoleHandler
 
 5librarian.org.apache.juli.AsyncFileHandler = FINEST
@@ -25,7 +25,7 @@ handlers = 1catalina.org.apache.juli.AsyncFileHandler, 2localhost.org.apache.jul
 
 pro.realis.handlers=5librarian.org.apache.juli.AsyncFileHandler
 
----
+-----------
 Deploywanie przez contexty w pliku server.xml
 ...
 <Host name="localhost"  appBase="webapps"
@@ -36,7 +36,7 @@ Deploywanie przez contexty w pliku server.xml
 <Context path="" docBase="ROOT"/>
 ...
 
----
+-----------
 Ustawianie aplikacji jako domyslnej strony na porcie 80
 ...
    <Connector port="80" protocol="HTTP/1.1"
@@ -55,7 +55,7 @@ usunac katalog ROOT
 
 restart tomcata
 
----
+-----------
 Dodawanie jdbc w server.xml
 
 <GlobalNamingResources>
@@ -79,7 +79,7 @@ Dodawanie jdbc w server.xml
                 />
 
 
----
+-----------
 Zmiana bazy danych na MariaDB,
 
 Dodanie sterownika ze strony:
@@ -112,6 +112,101 @@ Dodanie zasobow w server.xml
                         type="javax.sql.DataSource"
                 />
 
----
+-----------
+Mozna czesc konfigu wyrzucic z server.xml do aplikacji do pliku context.xml w META-INF.
+
+--------------
+Ten wpis ustawia jako zrodlo plik tomcat-users.xml
+...
+	<Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase"/>
+
+-----------
+Uwierzytelnianie i autoryzacja z DB:
+...
+     <Realm className="org.apache.catalina.realm.LockOutRealm">
+...
+        <!--<Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase"/>-->
+            <Realm className="org.apache.catalina.realm.DataSourceRealm"
+                dataSourceName="jdbc/localMariaDB"
+                userTable="user" userNameCol="user_name" userCredCol="password"
+                userRoleTable="role" roleNameCol="role_name"
+                />
+      </Realm>
+
+
+-----------
+Uwierzytelnianie i autoryzacja mieszana:
+
+Czesc uwierzytelniana przez z pliku tomcat-users.xml - manager
+
+  <Engine name="Catalina" defaultHost="localhost">
+...
+      <Realm className="org.apache.catalina.realm.LockOutRealm">
+...        <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase"/>
+...
+      </Realm>
+
+Czesc uwierzytelniana z bazy - aplikacja
+        <Context path="" docBase="librarian-web.war">
+...
+           <Realm className="org.apache.catalina.realm.DataSourceRealm"
+                dataSourceName="jdbc/localMariaDB"
+                userTable="user" userNameCol="user_name" userCredCol="password"
+                userRoleTable="role" roleNameCol="role_name"
+                />
+        </Context>
+
+-----------
+Generowanie SSL. Tomcat trzyma certy w keystorze.
+
+[root@sages conf]# keytool -genkeypair -alias librarian -keyalg RSA -keystore librarian.jks
+Enter keystore password:  
+Keystore password is too short - must be at least 6 characters
+Enter keystore password:  
+Re-enter new password: 
+What is your first and last name?
+  [Unknown]:  HB 
+What is the name of your organizational unit?
+  [Unknown]:  ATOS
+What is the name of your organization?
+  [Unknown]:  ATOS
+What is the name of your City or Locality?
+  [Unknown]:  WR
+What is the name of your State or Province?
+  [Unknown]:  DL
+What is the two-letter country code for this unit?
+  [Unknown]:  PL
+Is CN=HB, OU=ATOS, O=ATOS, L=WR, ST=DL, C=PL correct?
+  [no]:  yes
+
+Enter key password for <librarian>
+        (RETURN if same as keystore password):  
+Re-enter new password: 
+
+Warning:
+The JKS keystore uses a proprietary format. It is recommended to migrate to PKCS12 which is an industry standard format using "keytool -importkeystore -srckeystore librarian.jks -destkeystore librarian.jks -deststoretype pkcs12".
+[root@sages conf]#
+
+
+server.xml
+<Service name="Catalina">
+...
+<Connector port="8443" protocol="HTTP/1.1"
+    SSLEnabled="true"
+    maxThreads="150"
+    scheme="https" secure="true"
+    clientAuth="false"
+    sslProtocol="TLS"
+    keystoreFile="conf/librarian.jks"
+    keystorePass="librarian"
+    keyAlias="librarian"
+    keyPass="librarian" />
+
+Nie mozna wymusic po stronie tomcata przekierowania z portu 80 na 443. Musi to byc realizowane po stronie aplikacji.
+
+
 
 
