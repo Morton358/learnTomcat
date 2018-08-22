@@ -84,7 +84,19 @@
     <Connector port="80" protocol="HTTP/1.1"
                connectionTimeout="20000"
                redirectPort="8443" />
+
+	<Connector port="8443" protocol="HTTP/1.1"
+		SSLEnabled="true"
+		maxThreads="150"
+		scheme="https" secure="true"
+		clientAuth="false"
+		sslProtocol="TLS"
+		keystoreFile="conf/librarian.jks"
+		keystorePass="morton358"
+		keyAlias="librarian" />
+
     <!-- A "Connector" using the shared thread pool-->
+
     <!--
     <Connector executor="tomcatThreadPool"
                port="8080" protocol="HTTP/1.1"
